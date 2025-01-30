@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-class SelfAttention(nn.modules):
+class SelfAttention(nn.Module):
     def __init__(self,d_in,d_out,context_length,dropout,qkv_bias=False):
         super.__init__()
         self.W_query = nn.Linear(d_in,d_out,bias=qkv_bias)
@@ -10,13 +10,13 @@ class SelfAttention(nn.modules):
         self.register_buffer(
             'mask',
             torch.triu(torch.ones(context_length,context_length),
-                       diagonal=-1)
+                       diagonal=1)
         )
     def forward(self,x):
         b,num_tokens,d_in = x.shape
-        keys = x@self.W_key
-        queries = x@self.W_query
-        values = x@self.W_value
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
         attn_scores = queries@keys.transpose(1,2)
         attn_scores.masked_fill_(
             self.mask.bool() [:num_tokens, :num_tokens], -torch.inf
