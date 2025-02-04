@@ -1,17 +1,18 @@
 import torch.nn as nn
 import torch
 import tiktoken
+import multihead_attention
 
-class DummyGPTModel(nn.Module):
+class GPTModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.tok_emb = nn.Embedding(cfg["vocab_size"],cfg["emb_dim"])
         self.pos_emb = nn.Embedding(cfg["context_length"],cfg["emb_dim"])
         self.drop_emb = nn.Dropout(cfg["drop_rate"])
         self.trf_blocks = nn.Sequential(
-            *[DummyTransformerBlock(cfg) for _ in range(cfg["n_layers"])]
+            *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
         )
-        self.final_norm = DummyLayerNorm(cfg["emb_dim"])
+        self.final_norm = LayerNorm(cfg["emb_dim"])
         self.out_head = nn.Linear(cfg["emb_dim"],cfg["vocab_size"],bias=False)
 
     def forward(self,in_idx):
@@ -27,17 +28,63 @@ class DummyGPTModel(nn.Module):
         logits = self.out_head(x)
         return logits    
 
-class DummyTransformerBlock(nn.Module):
+class TransformerBlock(nn.Module):
     def __init__(self,cfg):
         super().__init__()
+        self.norm1 = LayerNorm(cfg["emb_dim"])
+        self.attn_layer = multihead_attention(cfg["emb_dim"],cfg["emb_dim"],
+                           cfg["context_length"],cfg["drop_rate"],cfg["n_heads"])
+        self.dropout = nn.Dropout(cfg["drop_rate"])
+        self.ff = FeedForward(cfg)
+        self.norm2 = LayerNorm(cfg["emb_dim"])
+
        
     def forward(self,x):
-        return x
+        shortcut = x
+        x = self.norm1(x)
+        x = self.attn_layer(x)
+        x = self.dropout(x)
+        x = x + shortcut
 
-class DummyLayerNorm(nn.Module):
-    def __init__(self,normalized_shape,eps=1e-5):
+        shortcut = x
+        x = self.norm2(x)
+        x = self.ff(x)
+        x = self.dropout(x)
+
+        return x + shortcut
+
+class LayerNorm(nn.Module):
+    def __init__(self,emb_dim):
+        super().__init__()
+        self.scale = nn.Parameter(torch.ones(emb_dim))
+        self.shift = nn.Parameter(torch.ones(emb_dim))
+        self.eps = 1e-5
+
+
+
+
+    def forward(self,x):
+        norm_mean = x.mean(dim=-1,keepdim=True)
+        norm_var = x.var(dim=-1,keepdim=True,unbiased=False)
+        norm_x = (x-norm_mean)/torch.sqrt(norm_var+self.eps)
+        return (self.scale*norm_x)+self.shift
+
+class GELU(nn.Module):
+    def __init__(self):
         super().__init__()
 
     def forward(self,x):
-        return x
+        return 0.5*x*(1+torch.tanh(torch.sqrt(torch.tensor(2.0/torch.pi)*
+                (x+0.044715*torch.pow(x,3)))))    
+    
 
+class FeedForward(nn.Module):
+    def __init__(self,cfg):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(cfg["emb_dim"],4*cfg["emb_dim"]),
+            GELU(),
+            nn.Linear(4*cfg["emb_dim"],cfg["emb_dim"])
+        )
+    def forward(self,x):
+        return self.layers(x)        
