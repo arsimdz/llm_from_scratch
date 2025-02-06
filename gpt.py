@@ -1,8 +1,7 @@
 import torch.nn as nn
 import torch
 import tiktoken
-import multihead_attention
-
+from multihead_attention import MulitHeadAttention
 class GPTModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
@@ -32,8 +31,8 @@ class TransformerBlock(nn.Module):
     def __init__(self,cfg):
         super().__init__()
         self.norm1 = LayerNorm(cfg["emb_dim"])
-        self.attn_layer = multihead_attention(cfg["emb_dim"],cfg["emb_dim"],
-                           cfg["context_length"],cfg["drop_rate"],cfg["n_heads"])
+        self.attn_layer = MulitHeadAttention(d_in=cfg["emb_dim"],d_out=cfg["emb_dim"],
+                           context_length=cfg["context_length"],dropout=cfg["drop_rate"],num_heads=cfg["n_heads"])
         self.dropout = nn.Dropout(cfg["drop_rate"])
         self.ff = FeedForward(cfg)
         self.norm2 = LayerNorm(cfg["emb_dim"])
@@ -50,14 +49,14 @@ class TransformerBlock(nn.Module):
         x = self.norm2(x)
         x = self.ff(x)
         x = self.dropout(x)
-
-        return x + shortcut
+        x= x+shortcut
+        return x
 
 class LayerNorm(nn.Module):
     def __init__(self,emb_dim):
         super().__init__()
         self.scale = nn.Parameter(torch.ones(emb_dim))
-        self.shift = nn.Parameter(torch.ones(emb_dim))
+        self.shift = nn.Parameter(torch.zeros(emb_dim))
         self.eps = 1e-5
 
 
@@ -67,15 +66,17 @@ class LayerNorm(nn.Module):
         norm_mean = x.mean(dim=-1,keepdim=True)
         norm_var = x.var(dim=-1,keepdim=True,unbiased=False)
         norm_x = (x-norm_mean)/torch.sqrt(norm_var+self.eps)
-        return (self.scale*norm_x)+self.shift
+        return self.scale * norm_x + self.shift
 
 class GELU(nn.Module):
     def __init__(self):
         super().__init__()
 
     def forward(self,x):
-        return 0.5*x*(1+torch.tanh(torch.sqrt(torch.tensor(2.0/torch.pi)*
-                (x+0.044715*torch.pow(x,3)))))    
+        return 0.5 * x * (1 + torch.tanh(
+            torch.sqrt(torch.tensor(2.0 / torch.pi)) *
+                (x+ 0.044715 * torch.pow(x,3))
+                ))    
     
 
 class FeedForward(nn.Module):
