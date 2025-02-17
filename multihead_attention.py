@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 
 class MulitHeadAttention(nn.Module):
-    def __init__(self,d_in,d_out,context_length,dropout,num_heads):
+    def __init__(self,d_in,d_out,context_length,dropout,num_heads,qkv_bias=False):
         super().__init__()
         assert (d_out%num_heads==0), \
              "d_out must be divisible by num_heads"
@@ -10,9 +10,9 @@ class MulitHeadAttention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = d_out // num_heads
 
-        self.W_query = nn.Linear(d_in,d_out)
-        self.W_key = nn.Linear(d_in,d_out)
-        self.W_value = nn.Linear(d_in,d_out)
+        self.W_query = nn.Linear(d_in,d_out,bias=qkv_bias)
+        self.W_key = nn.Linear(d_in,d_out,bias=qkv_bias)
+        self.W_value = nn.Linear(d_in,d_out,bias=qkv_bias)
         self.out_proj = nn.Linear(d_in,d_out)
         self.dropout = nn.Dropout(dropout)
         self.register_buffer("mask",

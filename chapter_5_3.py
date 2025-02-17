@@ -15,7 +15,7 @@ from train import train_model_simple
 with open("the-verdict.txt","r",encoding="utf-8") as f:
     raw_text = f.read()
 
-split_ratio = 0.9
+split_ratio = 0.5
 split_idx = int(split_ratio * len(raw_text))
 
 tokenizer = tiktoken.get_encoding("gpt2")
@@ -26,7 +26,7 @@ dataloader_train = create_data_loader_v1(train_set,batch_size=2,max_length=GPT_C
                                          stride=GPT_Config_124M["context_length"],shuffle=False)
 dataloader_val =  create_data_loader_v1(val_set,batch_size=2,max_length=GPT_Config_124M["context_length"],
                                          stride=GPT_Config_124M["context_length"],shuffle=False)
-
+print(len(val_set))
 torch.manual_seed(123)
 model = GPTModel(GPT_Config_124M)
 device = torch.device("cuda" if torch.cuda.is_available()else "cpu")

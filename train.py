@@ -73,7 +73,7 @@ def generate_and_print_sample(model, tokenizer,device,start_context):
     context_size = model.pos_emb.weight.shape[0]
     encoded = text_to_token(start_context,tokenizer=tokenizer)
     with torch.no_grad():
-        token_ids = generate(model=model,idx=encoded,context_size=context_size,max_new_tokens=50,temperature=2.0,top_k=3)
+        token_ids = generate(model=model,idx=encoded,context_size=context_size,max_new_tokens=50,temperature=1.5,top_k=3)
     gen_txt = token_ids_to_text(token_ids=token_ids,tokenizer=tokenizer)    
     print(gen_txt.replace("\n"," "))
     model.train() 

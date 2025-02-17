@@ -31,8 +31,8 @@ class TransformerBlock(nn.Module):
     def __init__(self,cfg):
         super().__init__()
         self.norm1 = LayerNorm(cfg["emb_dim"])
-        self.attn_layer = MulitHeadAttention(d_in=cfg["emb_dim"],d_out=cfg["emb_dim"],
-                           context_length=cfg["context_length"],dropout=cfg["drop_rate"],num_heads=cfg["n_heads"])
+        self.att = MulitHeadAttention(d_in=cfg["emb_dim"],d_out=cfg["emb_dim"],
+                           context_length=cfg["context_length"],dropout=cfg["drop_rate"],num_heads=cfg["n_heads"],qkv_bias=cfg["qkv_bias"])
         self.dropout = nn.Dropout(cfg["drop_rate"])
         self.ff = FeedForward(cfg)
         self.norm2 = LayerNorm(cfg["emb_dim"])
@@ -41,7 +41,7 @@ class TransformerBlock(nn.Module):
     def forward(self,x):
         shortcut = x
         x = self.norm1(x)
-        x = self.attn_layer(x)
+        x = self.att(x)
         x = self.dropout(x)
         x = x + shortcut
 
