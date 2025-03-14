@@ -29,6 +29,9 @@ for param in model.trf_blocks[-1].parameters():
 for param in model.final_norm.parameters():
     param.requires_grad = True
 
+
+
+
 train_dataset = SpamDataset(csv_file="train.csv",tokenizer=tokenizer)
 val_dataset = SpamDataset(csv_file="validation.csv",tokenizer=tokenizer,max_length=train_dataset.max_length)
 test_dataset = SpamDataset(csv_file="test.csv",tokenizer=tokenizer,max_length=train_dataset.max_length)
