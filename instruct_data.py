@@ -44,7 +44,7 @@ class InstructDataset(Dataset):
         self.encoded_text = []
         for entry in data:
             instruct_input = format_input(entry)
-            output = f"\n\n#### Response:\n{data['output']}"
+            output = f"\n\n#### Response:\n{entry['output']}"
             text = instruct_input + output
             encoded = tokenizer.encode(text)
             self.encoded_text.append(encoded)
@@ -57,7 +57,7 @@ class InstructDataset(Dataset):
     
 
 
-def custom_collate(batch,pad_token=50256,device="cpu",ignore_index=-100,alowed_max_length=None):
+def custom_collate(batch,pad_token=50256,device="cpu",ignore_index=-100,allowed_max_length=None):
     batch_max_length = max(len(item)+1 for item in batch)
     inputs_list,target_list = [],[]
     for item in batch:
@@ -73,9 +73,9 @@ def custom_collate(batch,pad_token=50256,device="cpu",ignore_index=-100,alowed_m
         if indices.numel() > 1:
             targets[indices[1:]] = ignore_index
 
-        if alowed_max_length is not None:
-            inputs = inputs[:alowed_max_length]
-            targets = targets[:alowed_max_length]
+        if allowed_max_length is not None:
+            inputs = inputs[:allowed_max_length]
+            targets = targets[:allowed_max_length]
 
         inputs_list.append(inputs)
         target_list.append(targets)
